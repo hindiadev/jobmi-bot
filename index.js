@@ -1,19 +1,42 @@
 const { chromium } = require("playwright");
+const path = require("path");
+const fs = require("fs");
 const dayjs = require("dayjs");
 
 // add locale id
 const localeId = require("dayjs/locale/id");
 dayjs.locale(localeId);
 
-(async () => {
-  const browser = await chromium.launch({ headless: false });
-  const page = await browser.newPage();
+// define URL
+const URL = "https://sipd.kemendagri.go.id/aklap";
+function getURL(url) {
+  return URL + url;
+}
 
-  await page.goto("https://sipd.kemendagri.go.id/aklap/login");
+const username = "ppkATMA";
+const password = "kaltimprov";
+
+/**
+ * Login to SIPD
+ * @param {string} username
+ * @param {string} password
+ * @returns {Promise<void>}
+ * @example
+ * login("ppkATMA", "**********");
+ */
+const login = async (username, password) => {
+  const browser = await chromium.launch();
+  const context = await browser.newContext({
+    timezoneId: "Asia/Jakarta",
+  });
+
+  const page = await context.newPage();
+
+  await page.goto(getURL("/login"));
   await page.isVisible('btn[type="submit"]');
 
-  await page.fill('input[name="username"]', "ppkATMA");
-  await page.fill('input[name="password"]', "kaltimprov");
+  await page.fill('input[name="username"]', username);
+  await page.fill('input[name="password"]', password);
 
   const tahun = dayjs().format("YYYY");
 
@@ -35,147 +58,70 @@ dayjs.locale(localeId);
 
   await page.getByText("Log In").click();
 
-  /* start input data here */
+  await page.waitForURL(getURL("/home"));
 
-  await page.waitForURL("https://sipd.kemendagri.go.id/aklap/home");
+  console.log("login success");
 
-  await page.click('a[href="/aklap/input-transaksi-non-anggaran"]');
-  await page.waitForURL(
-    "https://sipd.kemendagri.go.id/aklap/input-transaksi-non-anggaran"
-  );
+  const cookies = await context.cookies();
+  const cookieJson = JSON.stringify(cookies);
 
-  await page.selectOption("select.custom-select", "badan-layanan-umum-daerah");
-  await page.isVisible("button.btn.btn-success.rounded-0");
-
-  await Promise.all([
-    page.waitForResponse(
-      (resp) => resp.url().includes("get-skpd") && resp.status() === 200
-    ),
-    page.waitForResponse(
-      (resp) => resp.url().includes("skpd-unit") && resp.status() === 200
-    ),
-    page.waitForResponse(
-      (resp) => resp.url().includes("generate-nomor") && resp.status() === 200
-    ),
-  ]);
-
-  await page.click('[aria-describedby="input-tanggal_jurnal-feedback"]');
-  await page.isVisible("header.b-calendar-grid-caption");
-
-  const bulanInComponent = await page.$eval(
-    "header.b-calendar-grid-caption",
-    (el) => el.innerHTML
-  );
-  const bulanValueComponent = dayjs(bulanInComponent);
-  const tanggal = dayjs().subtract(2, "months");
-
-  // get the difference month between bulanValueComponent and tanggal
-  const diffMonth = tanggal.diff(bulanValueComponent, "month");
-  if (diffMonth > 0) {
-    for (let i = 0; i <= diffMonth; i++) {
-      await page.click('button[title="Next month"]');
-    }
-  } else {
-    for (let i = 0; i <= Math.abs(diffMonth); i++) {
-      await page.click('button[title="Previous month"]');
-    }
+  if (!fs.existsSync(path.resolve(__dirname, "auth_session", username))) {
+    fs.mkdirSync(path.resolve(__dirname, "auth_session", username), {
+      recursive: true,
+    });
   }
 
-  const tanggalString = tanggal.format("YYYY-MM-DD");
-  await page.click(`[data-date="${tanggalString}"]`);
-
-  await page.click("#vs4__combobox");
-  await page.keyboard.press("Enter");
-
-  await page.waitForResponse(
-    (resp) => resp.url().includes("get-urusan") && resp.status() === 200
+  fs.writeFileSync(
+    path.resolve(__dirname, "auth_session", username, "cookies.json"),
+    cookieJson
   );
 
-  await page.click("#vs5__combobox");
-  await page.keyboard.press("Enter");
+  console.log("cookies saved");
 
-  await page.waitForResponse(
-    (resp) => resp.url().includes("get-urusan") && resp.status() === 200
-  );
+  await browser.close();
+};
 
-  await page.click("#vs6__combobox");
-  await page.keyboard.press("Enter");
+/**
+ * Check login status
+ * @param {string} username
+ * @returns {Promise<void>}
+ * @example
+ * checkLogin("ppkATMA");
+ */
+const checkLogin = async (username) => {
+  const browser = await chromium.launch();
+  const context = await browser.newContext({
+    timezoneId: "Asia/Jakarta",
+  });
 
-  await page.waitForResponse(
-    (resp) => resp.url().includes("get-urusan") && resp.status() === 200
-  );
-
-  await page.click("#vs7__combobox");
-  await page.keyboard.press("Enter");
-
-  await page.waitForResponse(
-    (resp) => resp.url().includes("get-urusan") && resp.status() === 200
-  );
-
-  await page.click("#vs8__combobox");
-  await page.keyboard.press("Enter");
-
-  await page.waitForResponse(
-    (resp) => resp.url().includes("get-urusan") && resp.status() === 200
-  );
-
-  await page.click("#vs9__combobox");
-  await page.keyboard.press("Enter");
-
-  await page.waitForResponse(
-    (resp) =>
-      resp.url().includes("main-account-list-urusan") && resp.status() === 200
-  );
-
-  await page.click(`div[item-text="namaRekening"] > div`);
-  await page.keyboard.type("5.1.01.99.99.9999");
-  await page.keyboard.press("Enter");
-
-  await page.waitForResponse(
-    (resp) =>
-      resp.url().includes("paired-account-list") && resp.status() === 200
-  );
-
-  await page.getByPlaceholder("Pilih Nama dan Kode Rekening").click();
-  await page.keyboard.type("8.1.01.99.99.9999");
-  await page.keyboard.press("Enter");
-
-  await page.fill(
-    'input[aria-describedby="input-nominal_realisasi-feedback"]',
-    "999999999"
-  );
-
-  await page.getByText("Preview").click();
-  await page.getByText("Tutup").click();
-  await page.getByText("Tambah").click();
-  // await Promise.all([page.waitForEvent("dialog")]);
-
-  const fileChooserPromise = page.waitForEvent("filechooser");
-  await page.click(".custom-file.b-form-file");
-  const fileChooser = await fileChooserPromise;
-  await fileChooser.setFiles("test.pdf");
-
-  await page.fill(
-    'input[aria-describedby="input-nilai-feedback"]',
-    "Belanja Pegawai Testing"
-  );
-
-  await page.getByText("Preview").click();
-
-  const count = await page.getByText("999.999.999").count();
-
-  if (count == 4) {
-    console.log("success tambah jurnal");
-  } else {
-    console.log("failed tambah jurnal");
+  // cek apakah auth_session/username/cookies.json ada
+  if (
+    !fs.existsSync(
+      path.resolve(__dirname, "auth_session", username, "cookies.json")
+    )
+  ) {
+    console.log("User belum login");
+    await browser.close();
+    return;
   }
 
-  await page.getByText("Tutup").click();
-  await page.getByText("Simpan").click();
+  const cookies = fs.readFileSync(
+    path.resolve(__dirname, "auth_session", username, "cookies.json"),
+    "utf8"
+  );
 
-  // await page.click(".swal2-confirm");
+  const deserializedCookies = JSON.parse(cookies);
+  await context.addCookies(deserializedCookies);
 
-  await page.waitForURL("https://sipd.kemendagri.go.id/aklap/home");
+  const page = await context.newPage();
 
-  //   await browser.close();
-})();
+  await page.goto(getURL("/home"));
+
+  console.log("User udah login kok");
+
+  await browser.close();
+};
+
+// run login()
+// login(username, password);
+checkLogin(username);
