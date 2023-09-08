@@ -30,3 +30,7 @@ client.on('login_success', async () => {
 client.on('login_failed', async () => {
 	console.log('login_failed')
 })
+
+client.on('destroyed', async () => {
+	console.log('destroyed')
+})

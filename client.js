@@ -75,6 +75,8 @@ class SIPDAklapClient extends EventEmitter {
 	 */
 	async destroy() {
 		await this.browser.close()
+
+		this.emit(EventsConstants.DESTROYED)
 	}
 
 	/**
