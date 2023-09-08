@@ -1,0 +1,119 @@
+const { chromium } = require('playwright')
+const path = require('path')
+const fs = require('fs')
+const dayjs = require('dayjs')
+dayjs.locale(require('dayjs/locale/id'))
+const EventEmitter = require('events')
+
+const SITE_URL = 'https://sipd.kemendagri.go.id/aklap'
+
+const siteUrl = (url) => {
+	return SITE_URL + url
+}
+
+const username = 'ppkATMA'
+const password = '****'
+const tahunAnggaran = dayjs().format('YYYY')
+
+/**
+ * Login to SIPD AKLAP
+ * @param {string} username
+ * @param {string} password
+ * @returns {Promise<void>}
+ * @example
+ * login("ppkATMA", "**********");
+ */
+const login = async (username, password) => {
+	const browser = await chromium.launch()
+	const context = await browser.newContext({
+		timezoneId: 'Asia/Jakarta',
+	})
+
+	const page = await context.newPage()
+
+	await page.goto(siteUrl('/login'))
+	await page.isVisible('btn[type="submit"]')
+
+	await page.fill('input[name="username"]', username)
+	await page.fill('input[name="password"]', password)
+
+	await page.click('#vs1__combobox')
+	await page.keyboard.type(tahunAnggaran)
+	await page.keyboard.press('Enter')
+
+	await page.waitForResponse(
+		(resp) => resp.url().includes('daerah-by-tahun') && resp.status() === 200
+	)
+
+	await page.click('#vs2__combobox')
+	await page.keyboard.type('Provinsi Kalimantan Timur')
+	await page.keyboard.press('Enter')
+
+	await page.click('label[for="remember"]')
+
+	await page.getByText('Log In').click()
+
+	await page.waitForURL(siteUrl('/home'))
+
+	console.log('login success')
+
+	const cookies = await context.cookies()
+	const cookieJson = JSON.stringify(cookies)
+
+	if (!fs.existsSync(path.resolve(__dirname, 'auth_session', username))) {
+		fs.mkdirSync(path.resolve(__dirname, 'auth_session', username), {
+			recursive: true,
+		})
+	}
+
+	fs.writeFileSync(
+		path.resolve(__dirname, 'auth_session', username, 'cookies.json'),
+		cookieJson
+	)
+
+	console.log('cookies saved')
+
+	await browser.close()
+}
+
+/**
+ * Check login status SIPD AKLAP
+ * @param {string} username
+ * @returns {Promise<void>}
+ * @example
+ * checkLogin("ppkATMA");
+ */
+const checkLogin = async (username) => {
+	const browser = await chromium.launch()
+	const context = await browser.newContext({
+		timezoneId: 'Asia/Jakarta',
+	})
+
+	if (
+		!fs.existsSync(
+			path.resolve(__dirname, 'auth_session', username, 'cookies.json')
+		)
+	) {
+		console.log('User belum login')
+		await browser.close()
+		return
+	}
+
+	const cookies = fs.readFileSync(
+		path.resolve(__dirname, 'auth_session', username, 'cookies.json'),
+		'utf8'
+	)
+
+	const deserializedCookies = JSON.parse(cookies)
+	await context.addCookies(deserializedCookies)
+
+	const page = await context.newPage()
+
+	await page.goto(siteUrl('/home'))
+
+	console.log('User udah login kok')
+
+	await browser.close()
+}
+
+checkLogin(username)
