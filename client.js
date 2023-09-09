@@ -5,6 +5,7 @@ const dayjs = require('dayjs')
 dayjs.locale(require('dayjs/locale/id'))
 const EventEmitter = require('events')
 const { EventsConstants } = require('./utils/constants')
+const { numberFormat } = require('./utils/number')
 
 class SIPDAklapClient extends EventEmitter {
 	constructor({ username, password }) {
@@ -31,7 +32,10 @@ class SIPDAklapClient extends EventEmitter {
 	 * Initialize SIPD AKLAP Client
 	 * @returns {Promise<void>}
 	 * @example
-	 * const client = new SIPDAklapClient()
+	 * const client = new SIPDAklapClient({
+	 *  	username: "ppkATMA",
+	 * 	password: "****"
+	 * })
 	 * client.initialize()
 	 * client.on('ready', () => { ... })
 	 */
@@ -170,6 +174,182 @@ class SIPDAklapClient extends EventEmitter {
 
 		this.emit(EventsConstants.LOGIN_SUCCESS)
 		this.emit(EventsConstants.AUTHENTICATED)
+	}
+
+	/**
+	 * Post Jurnal TNA BLUD
+	 * @param {Array} journals
+	 * @returns {Object}
+	 * @example
+	 * const journals = [{
+	 * 	"tanggal": "2023-12-31",
+	 * 	"kodeTransaksi": "5.1.01.99.99.9999",
+	 * 	"kodeRekening": "8.1.01.99.99.9999",
+	 * 	"nominal": "999999999",
+	 * 	"file": "test.pdf",
+	 * 	"uraian": "Belanja Pegawai Testing"
+	 * }, ...]
+	 * client.postTNABlud(journals)
+	 */
+	async postTNABlud({
+		tanggal,
+		kodeTransaksi,
+		kodeRekening,
+		nominal,
+		file,
+		uraian,
+	}) {
+		const context = this.context
+		const page = this.page
+
+		await page.goto(this.siteUrl('/input-transaksi-non-anggaran'))
+		await page.waitForURL(this.siteUrl('/input-transaksi-non-anggaran'))
+
+		await page.selectOption('select.custom-select', 'badan-layanan-umum-daerah')
+		await page.isVisible('button.btn-success')
+
+		await Promise.all([
+			page.waitForResponse(
+				(resp) => resp.url().includes('get-skpd') && resp.status() === 200
+			),
+			page.waitForResponse(
+				(resp) => resp.url().includes('skpd-unit') && resp.status() === 200
+			),
+			page.waitForResponse(
+				(resp) => resp.url().includes('generate-nomor') && resp.status() === 200
+			),
+		])
+
+		await page.click('[aria-describedby="input-tanggal_jurnal-feedback"]')
+		await page.isVisible('header.b-calendar-grid-caption')
+
+		const bulanInComponent = await page.$eval(
+			'header.b-calendar-grid-caption',
+			(el) => el.innerHTML
+		)
+		const bulanValueComponent = dayjs(bulanInComponent)
+		const tanggalInput = dayjs(tanggal)
+
+		const diffMonth = tanggalInput.diff(bulanValueComponent, 'month')
+		if (diffMonth > 0) {
+			for (let i = 0; i < diffMonth; i++) {
+				await page.click('button[title="Next month"]')
+			}
+		} else {
+			for (let i = 0; i <= Math.abs(diffMonth); i++) {
+				await page.click('button[title="Previous month"]')
+			}
+		}
+
+		const tanggalString = tanggalInput.format('YYYY-MM-DD')
+		await page.click(`[data-date="${tanggalString}"]`)
+
+		await page.getByText('Pilih Urusan*').click()
+		await page.keyboard.press('Enter')
+
+		await page.waitForResponse(
+			(resp) => resp.url().includes('get-urusan') && resp.status() === 200
+		)
+
+		await page.getByText('Pilih Bidang Urusan*').click()
+		await page.keyboard.press('Enter')
+
+		await page.waitForResponse(
+			(resp) => resp.url().includes('get-urusan') && resp.status() === 200
+		)
+
+		await page.getByText('Pilih Program*').click()
+		await page.keyboard.press('Enter')
+
+		await page.waitForResponse(
+			(resp) => resp.url().includes('get-urusan') && resp.status() === 200
+		)
+
+		await page.getByText('Pilih Kegiatan*').click()
+		await page.keyboard.press('Enter')
+
+		await page.waitForResponse(
+			(resp) => resp.url().includes('get-urusan') && resp.status() === 200
+		)
+
+		await page.getByText('Pilih Sub Kegiatan*').click()
+		await page.keyboard.press('Enter')
+
+		await page.waitForResponse(
+			(resp) => resp.url().includes('get-urusan') && resp.status() === 200
+		)
+
+		await page
+			.getByLabel('Pilih Transaksi')
+			.getByText('Pilih Transaksi')
+			.click()
+		await page.keyboard.type(kodeTransaksi)
+		await page.keyboard.press('Enter')
+
+		await page.waitForResponse(
+			(resp) =>
+				resp.url().includes('paired-account-list') && resp.status() === 200
+		)
+
+		await page.getByText('Pilih Kode Rekening').click()
+		await page.keyboard.type(kodeRekening)
+		await page.keyboard.press('Enter')
+
+		await page.fill(
+			'input[aria-describedby="input-nominal_realisasi-feedback"]',
+			String(nominal).toString()
+		)
+
+		await page.getByText('Preview').click()
+		await page.getByText('Tutup').click()
+		await page.getByText('Tambah').click()
+
+		const fileChooserPromise = page.waitForEvent('filechooser')
+		await page.click('.custom-file.b-form-file')
+		const fileChooser = await fileChooserPromise
+		await fileChooser.setFiles(
+			path.resolve(__dirname, 'files', tanggalString, file)
+		)
+
+		await page.fill(
+			'input[aria-describedby="input-nilai-feedback"]',
+			'Belanja Pegawai Testing'
+		)
+
+		await page.getByText('Preview').click()
+
+		const count = await page.getByText(numberFormat(nominal)).count()
+
+		if (count != 4) {
+			return
+		}
+
+		await page.getByText('Tutup').click()
+		await page.getByText('Simpan').click()
+
+		await page.click('.swal2-confirm')
+
+		await page.waitForURL(this.siteUrl('/home'))
+
+		return {
+			tanggal,
+			kodeTransaksi,
+			kodeRekening,
+			nominal,
+			file,
+			uraian,
+		}
+	}
+
+	async postTNABludMany(journals) {
+		let successPostedData = []
+
+		journals.map(async (journal) => {
+			const successPosted = await this.postTNABlud(journal)
+			successPostedData.push(successPosted)
+		})
+
+		return successPostedData
 	}
 }
 

@@ -4,8 +4,8 @@ dotenv.config()
 const SIPDAklapClient = require('./client')
 
 const client = new SIPDAklapClient({
-	username: process.env.SIPD_USERNAME,
-	password: process.env.SIPD_PASSWORD,
+	username: process.env.SIPDAKLAP_USERNAME,
+	password: process.env.SIPDAKLAP_PASSWORD,
 })
 
 client.initialize()
@@ -20,17 +20,27 @@ client.on('authenticated', async () => {
 
 client.on('unauthenticated', async () => {
 	console.log('unauthenticated')
-	await client.login()
 })
 
-client.on('login_success', async () => {
-	console.log('login_success')
+const express = require('express')
+const app = express()
+const port = 3000
+
+app.get('/', async (req, res) => {
+	const journal = {
+		tanggal: '2023-12-31',
+		kodeTransaksi: '5.1.01.99.99.9999',
+		kodeRekening: '8.1.01.99.99.9999',
+		nominal: 999999999,
+		file: 'test.pdf',
+		uraian: 'Belanja Pegawai Testing',
+	}
+
+	const response = await client.postTNABlud(journal)
+
+	return res.json(response)
 })
 
-client.on('login_failed', async () => {
-	console.log('login_failed')
-})
-
-client.on('destroyed', async () => {
-	console.log('destroyed')
+app.listen(port, () => {
+	console.log(`Example app listening at http://localhost:${port}`)
 })
