@@ -54,7 +54,9 @@ class SIPDAklapClient extends EventEmitter {
 		this.context = context
 		this.page = page
 
-		await page.goto(this.siteUrl('/'))
+		await page.goto(this.siteUrl('/'), {
+			timeout: this.timeout,
+		})
 
 		await page.waitForURL(this.siteUrl('/'), {
 			timeout: this.timeout,
@@ -111,7 +113,9 @@ class SIPDAklapClient extends EventEmitter {
 		const deserializedCookies = JSON.parse(cookies)
 		await context.addCookies(deserializedCookies)
 
-		await page.goto(this.siteUrl('/home'))
+		await page.goto(this.siteUrl('/home'), {
+			timeout: this.timeout,
+		})
 
 		if (page.url() !== this.siteUrl('/home')) {
 			return false
@@ -138,6 +142,7 @@ class SIPDAklapClient extends EventEmitter {
 
 		await page.goto(this.siteUrl('/login'), {
 			waitUntil: 'domcontentloaded',
+			timeout: this.timeout,
 		})
 
 		await page.isVisible('btn[type="submit"]')
@@ -145,7 +150,7 @@ class SIPDAklapClient extends EventEmitter {
 		await page.fill('input[name="username"]', this.username)
 		await page.fill('input[name="password"]', this.password)
 
-		await page.click('#vs1__combobox')
+		await page.click('#vs4__combobox')
 		await page.keyboard.type(dayjs().format('YYYY'))
 		await page.keyboard.press('Enter')
 
@@ -156,7 +161,7 @@ class SIPDAklapClient extends EventEmitter {
 			}
 		)
 
-		await page.click('#vs2__combobox')
+		await page.click('#vs5__combobox')
 		await page.keyboard.type('Provinsi Kalimantan Timur')
 		await page.keyboard.press('Enter')
 
@@ -217,6 +222,7 @@ class SIPDAklapClient extends EventEmitter {
 		await page.goto(this.siteUrl('/input-transaksi-non-anggaran'), {
 			waitUntil: 'domcontentloaded',
 			referer: this.siteUrl('/home'),
+			timeout: this.timeout,
 		})
 		await page.waitForURL(this.siteUrl('/input-transaksi-non-anggaran'), {
 			timeout: this.timeout,

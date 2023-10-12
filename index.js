@@ -10,7 +10,7 @@ const client = new SIPDAklapClient(
 		password: process.env.SIPDAKLAP_PASSWORD,
 	},
 	{
-		timeout: process.env.WAIT_TIMEOUT,
+		timeout: Number(process.env.WAIT_TIMEOUT),
 	}
 )
 
@@ -59,7 +59,7 @@ client.on('authenticated', async () => {
 		}
 
 		;(async () => {
-			const result = await this.postTNABlud(data)
+			const result = await client.postTNABlud(data)
 
 			if (result) {
 				row.getCell('F').value = 'Sukses'
