@@ -8,10 +8,13 @@ const { EventsConstants } = require('./utils/constants')
 const { numberFormat } = require('./utils/number')
 
 class SIPDAklapClient extends EventEmitter {
-	constructor({ username, password }) {
+	constructor({ username, password }, { timeout, slowMo }) {
 		super()
 		this.username = username
 		this.password = password
+
+		this.timeout = timeout || undefined
+		this.slowMo = slowMo || undefined
 
 		this.siteUrl = (url) => {
 			return 'https://sipd.kemendagri.go.id/aklap' + url
@@ -42,6 +45,7 @@ class SIPDAklapClient extends EventEmitter {
 	async initialize() {
 		const browser = await chromium.launch({
 			headless: false,
+			slowMo: this.slowMo,
 		})
 		const context = await browser.newContext()
 		const page = await context.newPage()
@@ -52,7 +56,9 @@ class SIPDAklapClient extends EventEmitter {
 
 		await page.goto(this.siteUrl('/'))
 
-		await page.waitForURL(this.siteUrl('/'))
+		await page.waitForURL(this.siteUrl('/'), {
+			timeout: this.timeout,
+		})
 
 		const readiness = page.url() === this.siteUrl('/')
 
@@ -130,7 +136,9 @@ class SIPDAklapClient extends EventEmitter {
 			return
 		}
 
-		await page.goto(this.siteUrl('/login'))
+		await page.goto(this.siteUrl('/login'), {
+			waitUntil: 'domcontentloaded',
+		})
 
 		await page.isVisible('btn[type="submit"]')
 
@@ -142,7 +150,10 @@ class SIPDAklapClient extends EventEmitter {
 		await page.keyboard.press('Enter')
 
 		await page.waitForResponse(
-			(resp) => resp.url().includes('daerah-by-tahun') && resp.status() === 200
+			(resp) => resp.url().includes('daerah-by-tahun') && resp.status() === 200,
+			{
+				timeout: this.timeout,
+			}
 		)
 
 		await page.click('#vs2__combobox')
@@ -153,7 +164,9 @@ class SIPDAklapClient extends EventEmitter {
 
 		await page.getByText('Log In').click()
 
-		await page.waitForURL(this.siteUrl('/home'))
+		await page.waitForURL(this.siteUrl('/home'), {
+			timeout: this.timeout,
+		})
 
 		const loggedIn = page.url() === this.siteUrl('/home')
 		if (!loggedIn) {
@@ -199,24 +212,38 @@ class SIPDAklapClient extends EventEmitter {
 		file,
 		uraian,
 	}) {
-		const context = this.context
 		const page = this.page
 
-		await page.goto(this.siteUrl('/input-transaksi-non-anggaran'))
-		await page.waitForURL(this.siteUrl('/input-transaksi-non-anggaran'))
+		await page.goto(this.siteUrl('/input-transaksi-non-anggaran'), {
+			waitUntil: 'domcontentloaded',
+			referer: this.siteUrl('/home'),
+		})
+		await page.waitForURL(this.siteUrl('/input-transaksi-non-anggaran'), {
+			timeout: this.timeout,
+		})
 
 		await page.selectOption('select.custom-select', 'badan-layanan-umum-daerah')
 		await page.isVisible('button.btn-success')
 
 		await Promise.all([
 			page.waitForResponse(
-				(resp) => resp.url().includes('get-skpd') && resp.status() === 200
+				(resp) => resp.url().includes('get-skpd') && resp.status() === 200,
+				{
+					timeout: this.timeout,
+				}
 			),
 			page.waitForResponse(
-				(resp) => resp.url().includes('skpd-unit') && resp.status() === 200
+				(resp) => resp.url().includes('skpd-unit') && resp.status() === 200,
+				{
+					timeout: this.timeout,
+				}
 			),
 			page.waitForResponse(
-				(resp) => resp.url().includes('generate-nomor') && resp.status() === 200
+				(resp) =>
+					resp.url().includes('generate-nomor') && resp.status() === 200,
+				{
+					timeout: this.timeout,
+				}
 			),
 		])
 
@@ -245,38 +272,61 @@ class SIPDAklapClient extends EventEmitter {
 		await page.click(`[data-date="${tanggalString}"]`)
 
 		await page.getByText('Pilih Urusan*').click()
-		await page.keyboard.press('Enter')
+		await page
+			.getByText(
+				'URUSAN PEMERINTAHAN WAJIB YANG BERKAITAN DENGAN PELAYANAN DASAR'
+			)
+			.click()
 
 		await page.waitForResponse(
-			(resp) => resp.url().includes('get-urusan') && resp.status() === 200
+			(resp) => resp.url().includes('get-urusan') && resp.status() === 200,
+			{
+				timeout: this.timeout,
+			}
 		)
 
 		await page.getByText('Pilih Bidang Urusan*').click()
-		await page.keyboard.press('Enter')
+		await page.getByText('URUSAN PEMERINTAHAN BIDANG KESEHATAN').click()
 
 		await page.waitForResponse(
-			(resp) => resp.url().includes('get-urusan') && resp.status() === 200
+			(resp) => resp.url().includes('get-urusan') && resp.status() === 200,
+			{
+				timeout: this.timeout,
+			}
 		)
 
 		await page.getByText('Pilih Program*').click()
-		await page.keyboard.press('Enter')
+		await page
+			.getByText('PROGRAM PENUNJANG URUSAN PEMERINTAHAN DAERAH PROVINSI')
+			.click()
 
 		await page.waitForResponse(
-			(resp) => resp.url().includes('get-urusan') && resp.status() === 200
+			(resp) => resp.url().includes('get-urusan') && resp.status() === 200,
+			{
+				timeout: this.timeout,
+			}
 		)
 
 		await page.getByText('Pilih Kegiatan*').click()
-		await page.keyboard.press('Enter')
+		await page.getByText('Peningkatan Pelayanan BLUD').click()
 
 		await page.waitForResponse(
-			(resp) => resp.url().includes('get-urusan') && resp.status() === 200
+			(resp) => resp.url().includes('get-urusan') && resp.status() === 200,
+			{
+				timeout: this.timeout,
+			}
 		)
 
 		await page.getByText('Pilih Sub Kegiatan*').click()
-		await page.keyboard.press('Enter')
+		await page.getByText('Pelayanan dan Penunjang Pelayanan BLUD').click()
 
 		await page.waitForResponse(
-			(resp) => resp.url().includes('get-urusan') && resp.status() === 200
+			(resp) =>
+				resp.url().includes('main-account-list-urusan?') &&
+				resp.status() === 200,
+			{
+				timeout: this.timeout,
+			}
 		)
 
 		await page
@@ -284,16 +334,57 @@ class SIPDAklapClient extends EventEmitter {
 			.getByText('Pilih Transaksi')
 			.click()
 		await page.keyboard.type(kodeTransaksi)
+
+		await page.waitForResponse(
+			(resp) =>
+				resp.url().includes('main-account-list-urusan?') &&
+				resp.status() === 200,
+			{
+				timeout: this.timeout,
+			}
+		)
+
+		await page.keyboard.press('Enter')
+
+		await Promise.all([
+			page.waitForResponse(
+				(resp) =>
+					resp.url().includes('get-nominal-anggaran?') && resp.status() === 200,
+				{
+					timeout: this.timeout,
+				}
+			),
+			page.waitForResponse(
+				(resp) =>
+					resp.url().includes('main-account-list-rekening?') &&
+					resp.status() === 200,
+				{
+					timeout: this.timeout,
+				}
+			),
+		])
+
+		await page.getByText('Pilih Kode Rekening').click()
+		await page.keyboard.type(kodeRekening)
+
+		await page.waitForResponse(
+			(resp) =>
+				resp.url().includes('main-account-list-rekening?') &&
+				resp.status() === 200,
+			{
+				timeout: this.timeout,
+			}
+		)
+
 		await page.keyboard.press('Enter')
 
 		await page.waitForResponse(
 			(resp) =>
-				resp.url().includes('paired-account-list') && resp.status() === 200
+				resp.url().includes('paired-account-list?') && resp.status() === 200,
+			{
+				timeout: this.timeout,
+			}
 		)
-
-		await page.getByText('Pilih Kode Rekening').click()
-		await page.keyboard.type(kodeRekening)
-		await page.keyboard.press('Enter')
 
 		await page.fill(
 			'input[aria-describedby="input-nominal_realisasi-feedback"]',
@@ -304,17 +395,14 @@ class SIPDAklapClient extends EventEmitter {
 		await page.getByText('Tutup').click()
 		await page.getByText('Tambah').click()
 
-		const fileChooserPromise = page.waitForEvent('filechooser')
+		const fileChooserPromise = page.waitForEvent('filechooser', {
+			timeout: this.timeout,
+		})
 		await page.click('.custom-file.b-form-file')
 		const fileChooser = await fileChooserPromise
-		await fileChooser.setFiles(
-			path.resolve(__dirname, 'files', tanggalString, file)
-		)
+		await fileChooser.setFiles(path.resolve(__dirname, 'files', file))
 
-		await page.fill(
-			'input[aria-describedby="input-nilai-feedback"]',
-			'Belanja Pegawai Testing'
-		)
+		await page.fill('input[aria-describedby="input-nilai-feedback"]', uraian)
 
 		await page.getByText('Preview').click()
 
@@ -329,7 +417,10 @@ class SIPDAklapClient extends EventEmitter {
 
 		await page.click('.swal2-confirm')
 
-		await page.waitForURL(this.siteUrl('/home'))
+		await page.waitForURL(this.siteUrl('/home'), {
+			waitUntil: 'domcontentloaded',
+			timeout: this.timeout,
+		})
 
 		return {
 			tanggal,
@@ -339,17 +430,6 @@ class SIPDAklapClient extends EventEmitter {
 			file,
 			uraian,
 		}
-	}
-
-	async postTNABludMany(journals) {
-		let successPostedData = []
-
-		journals.map(async (journal) => {
-			const successPosted = await this.postTNABlud(journal)
-			successPostedData.push(successPosted)
-		})
-
-		return successPostedData
 	}
 }
 
