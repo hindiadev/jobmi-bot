@@ -77,7 +77,7 @@ client.on('authenticated', async () => {
 		}
 	}
 
-	const date = new Date();
+
 	const fileName = `INPUT SIPD BOT.txt`;
 	const fileContent = `Total terinput: ${indicatorTerinput} dari ${rows.length} data yang ada di Excel`;
 

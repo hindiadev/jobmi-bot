@@ -436,7 +436,7 @@ class SIPDAklapClient extends EventEmitter {
 
 		const count = await page.getByText(numberFormat(nominal)).count()
 
-		if (count != 4) {
+		if (count !== 4) {
 			return
 		}
 
