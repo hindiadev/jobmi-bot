@@ -152,6 +152,7 @@ class SIPDAklapClient extends EventEmitter {
 
 		await page.locator('.v-select').nth(0).click()
 		await page.keyboard.type(dayjs().format('YYYY'))
+		await page.getByText(dayjs().format('YYYY'))
 		await page.keyboard.press('Enter')
 
 		await page.waitForResponse(
@@ -163,6 +164,7 @@ class SIPDAklapClient extends EventEmitter {
 
 		await page.locator('.v-select').nth(1).click()
 		await page.keyboard.type('Provinsi Kalimantan Timur')
+		await page.getByText('Provinsi Kalimantan Timur')
 		await page.keyboard.press('Enter')
 
 		await page.click('label[for="remember"]')
@@ -199,15 +201,15 @@ class SIPDAklapClient extends EventEmitter {
 	 * @param {Array} journals
 	 * @returns {Object}
 	 * @example
-	 * const journals = [{
+	 * const journals = {
 	 * 	"tanggal": "2023-12-31",
 	 * 	"kodeTransaksi": "5.1.01.99.99.9999",
 	 * 	"kodeRekening": "8.1.01.99.99.9999",
 	 * 	"nominal": "999999999",
 	 * 	"file": "test.pdf",
 	 * 	"uraian": "Belanja Pegawai Testing"
-	 * }, ...]
-	 * client.postTNABlud(journals)
+	 * }
+	 * client.postTNABlud(journal)
 	 */
 	async postTNABlud({
 		tanggal,
@@ -371,8 +373,7 @@ class SIPDAklapClient extends EventEmitter {
 				timeout: this.timeout,
 			}
 		)
-
-		await page.keyboard.press('Enter')
+		await page.getByText(kodeTransaksi).click()
 
 		await Promise.all([
 			page.waitForResponse(
@@ -403,8 +404,7 @@ class SIPDAklapClient extends EventEmitter {
 				timeout: this.timeout,
 			}
 		)
-
-		await page.keyboard.press('Enter')
+		await page.getByText(kodeRekening).click()
 
 		await page.waitForResponse(
 			(resp) =>

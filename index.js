@@ -44,19 +44,36 @@ client.on('authenticated', async () => {
 		const file = row.getCell('D').value;
 		const uraian = row.getCell('E').value;
 
-		let kodeRekening;
+		let kodeTransaksiInput = kodeTransaksi;
+		let kodeRekeningInput;
 
-		if (kodeTransaksi.startsWith('5.1')) {
-			kodeRekening = `8.1.${kodeTransaksi.substring(4)}`;
-		} else if (kodeTransaksi.startsWith('5.2')) {
-			kodeRekening = `1.3.${kodeTransaksi.substring(4)}`;
+		// if (kodeTransaksi.startsWith('5.1')) {
+		// 	kodeRekening = `8.1.${kodeTransaksi.substring(4)}`;
+		// } else if (kodeTransaksi.startsWith('5.2')) {
+		// 	kodeTransaksi = `5.2.02.99.99.9999`
+		// 	kodeRekening = `1.3.${kodeTransaksi.substring(4)}`;
+		// }
+
+		if(kodeTransaksi.startsWith('5.1.01')) {
+			kodeTransaksiInput = `5.1.01.99.99.9999`;
+			kodeRekeningInput = `8.1.01.99.99.9999`;
+		}
+
+		if(kodeTransaksi.startsWith('5.1.02')) {
+			kodeTransaksiInput = `5.1.02.99.99.9999`;
+			kodeRekeningInput = `8.1.02.99.99.9999`;
+		}
+
+		if(kodeTransaksi.startsWith('5.2')) {
+			kodeTransaksiInput = `5.2.02.99.99.9999`
+			kodeRekeningInput = `1.3.${kodeTransaksi.substring(4)}`;
 		}
 
 		try {
 			const result = await client.postTNABlud({
 				tanggal,
-				kodeTransaksi,
-				kodeRekening,
+				kodeTransaksi: kodeTransaksiInput,
+				kodeRekening: kodeRekeningInput,
 				nominal,
 				file,
 				uraian,
