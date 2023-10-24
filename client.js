@@ -19,7 +19,7 @@ class SIPDAklapClient extends EventEmitter {
 		this.siteUrl = (url) => {
 			return 'https://sipd.kemendagri.go.id/aklap' + url
 		}
-		this.FOLDER_AUTH = path.resolve(
+		this.folder_auth_session = path.resolve(
 			__dirname,
 			'.auth_session',
 			'SIPDAklapClient',
@@ -102,7 +102,7 @@ class SIPDAklapClient extends EventEmitter {
 		const context = this.context
 		const page = this.page
 
-		const cookiesPath = path.join(this.FOLDER_AUTH, 'cookies.json')
+		const cookiesPath = path.join(this.folder_auth_session, 'cookies.json')
 
 		if (!fs.existsSync(cookiesPath)) {
 			return false
@@ -150,7 +150,7 @@ class SIPDAklapClient extends EventEmitter {
 		await page.fill('input[name="username"]', this.username)
 		await page.fill('input[name="password"]', this.password)
 
-		await page.click('#vs4__combobox')
+		await page.locator('.v-select').nth(0).click()
 		await page.keyboard.type(dayjs().format('YYYY'))
 		await page.keyboard.press('Enter')
 
@@ -161,7 +161,7 @@ class SIPDAklapClient extends EventEmitter {
 			}
 		)
 
-		await page.click('#vs5__combobox')
+		await page.locator('.v-select').nth(1).click()
 		await page.keyboard.type('Provinsi Kalimantan Timur')
 		await page.keyboard.press('Enter')
 
@@ -182,13 +182,13 @@ class SIPDAklapClient extends EventEmitter {
 		const cookies = await context.cookies()
 		const cookieJson = JSON.stringify(cookies)
 
-		if (!fs.existsSync(this.FOLDER_AUTH)) {
-			fs.mkdirSync(this.FOLDER_AUTH, {
+		if (!fs.existsSync(this.folder_auth_session)) {
+			fs.mkdirSync(this.folder_auth_session, {
 				recursive: true,
 			})
 		}
 
-		fs.writeFileSync(path.join(this.FOLDER_AUTH, 'cookies.json'), cookieJson)
+		fs.writeFileSync(path.join(this.folder_auth_session, 'cookies.json'), cookieJson)
 
 		this.emit(EventsConstants.LOGIN_SUCCESS)
 		this.emit(EventsConstants.AUTHENTICATED)
@@ -260,10 +260,32 @@ class SIPDAklapClient extends EventEmitter {
 			'header.b-calendar-grid-caption',
 			(el) => el.innerHTML
 		)
-		const bulanValueComponent = dayjs(bulanInComponent)
+		const converterBulanComponent = (inComponent) => {
+			const bulanIndonesia = [
+				'Januari',
+				'Februari',
+				'Maret',
+				'April',
+				'Mei',
+				'Juni',
+				'Juli',
+				'Agustus',
+				'September',
+				'Oktober',
+				'November',
+				'Desember',
+			]
+			const namaBulan = inComponent.split(' ')[0]
+			const bulan = bulanIndonesia.indexOf(namaBulan) + 1
+			const tahun = inComponent.split(' ')[1]
+			return dayjs(`${tahun}-${bulan}-01`)
+		}
+
+		const bulanValueComponent = converterBulanComponent(bulanInComponent)
 		const tanggalInput = dayjs(tanggal)
 
 		const diffMonth = tanggalInput.diff(bulanValueComponent, 'month')
+
 		if (diffMonth > 0) {
 			for (let i = 0; i < diffMonth; i++) {
 				await page.click('button[title="Next month"]')
