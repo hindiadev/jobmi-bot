@@ -1,11 +1,11 @@
 const dotenv = require('dotenv')
 const ExcelJS = require('exceljs')
-const fs = require('fs');
+const fs = require('fs')
 dotenv.config()
 
-const SIPDAklapClient = require('./client')
+const SIPDBelanjaClient = require('./client')
 
-const client = new SIPDAklapClient(
+const client = new SIPDBelanjaClient(
 	{
 		username: process.env.SIPDAKLAP_USERNAME,
 		password: process.env.SIPDAKLAP_PASSWORD,
@@ -22,51 +22,44 @@ client.on('ready', async () => {
 })
 
 client.on('authenticated', async () => {
-	console.log('authenticated');
+	console.log('authenticated')
 
-	const workbook = new ExcelJS.Workbook();
-	await workbook.xlsx.readFile('INPUT SIPD BOT.xlsx');
-	const worksheet = workbook.getWorksheet('Sheet1');
-	const rows = worksheet.getRows(2, worksheet.rowCount - 1);
-	let indicatorTerinput = 0;
+	const workbook = new ExcelJS.Workbook()
+	await workbook.xlsx.readFile('INPUT SIPD BOT.xlsx')
+	const worksheet = workbook.getWorksheet('Sheet1')
+	const rows = worksheet.getRows(2, worksheet.rowCount - 1)
+	let indicatorTerinput = 0
 
 	for (let i = 0; i < rows.length; i++) {
-		const row = rows[i];
-		const status = row.getCell('F').value;
+		const row = rows[i]
+		const status = row.getCell('F').value
 
 		if (status) {
-			continue;
+			continue
 		}
 
-		const tanggal = row.getCell('A').value;
-		const kodeTransaksi = row.getCell('B').value;
-		const nominal = row.getCell('C').value;
-		const file = row.getCell('D').value;
-		const uraian = row.getCell('E').value;
+		const tanggal = row.getCell('A').value
+		const kodeTransaksi = row.getCell('B').value
+		const nominal = row.getCell('C').value
+		const file = row.getCell('D').value
+		const uraian = row.getCell('E').value
 
-		let kodeTransaksiInput = kodeTransaksi;
-		let kodeRekeningInput;
+		let kodeTransaksiInput = kodeTransaksi
+		let kodeRekeningInput
 
-		// if (kodeTransaksi.startsWith('5.1')) {
-		// 	kodeRekening = `8.1.${kodeTransaksi.substring(4)}`;
-		// } else if (kodeTransaksi.startsWith('5.2')) {
-		// 	kodeTransaksi = `5.2.02.99.99.9999`
-		// 	kodeRekening = `1.3.${kodeTransaksi.substring(4)}`;
-		// }
-
-		if(kodeTransaksi.startsWith('5.1.01')) {
-			kodeTransaksiInput = `5.1.01.99.99.9999`;
-			kodeRekeningInput = `8.1.01.99.99.9999`;
+		if (kodeTransaksi.startsWith('5.1.01')) {
+			kodeTransaksiInput = `5.1.01.99.99.9999`
+			kodeRekeningInput = `8.1.01.99.99.9999`
 		}
 
-		if(kodeTransaksi.startsWith('5.1.02')) {
-			kodeTransaksiInput = `5.1.02.99.99.9999`;
-			kodeRekeningInput = `8.1.02.99.99.9999`;
+		if (kodeTransaksi.startsWith('5.1.02')) {
+			kodeTransaksiInput = `5.1.02.99.99.9999`
+			kodeRekeningInput = `8.1.02.99.99.9999`
 		}
 
-		if(kodeTransaksi.startsWith('5.2')) {
+		if (kodeTransaksi.startsWith('5.2')) {
 			kodeTransaksiInput = `5.2.02.99.99.9999`
-			kodeRekeningInput = `1.3.${kodeTransaksi.substring(4)}`;
+			kodeRekeningInput = `1.3.${kodeTransaksi.substring(4)}`
 		}
 
 		try {
@@ -77,35 +70,34 @@ client.on('authenticated', async () => {
 				nominal,
 				file,
 				uraian,
-			});
+			})
 
 			if (result) {
-				row.getCell('F').value = 'Sukses';
+				row.getCell('F').value = 'Sukses'
 			} else {
-				row.getCell('F').value = 'Gagal';
+				row.getCell('F').value = 'Gagal'
 			}
 
-			await workbook.xlsx.writeFile('INPUT SIPD BOT.xlsx');
+			await workbook.xlsx.writeFile('INPUT SIPD BOT.xlsx')
 
-			console.log(`✅ ${result.file} - ${result.nominal}`);
-			indicatorTerinput++;
+			console.log(`✅ ${result.file} - ${result.nominal}`)
+			indicatorTerinput++
 		} catch (error) {
-			console.error(`❌ Error processing row ${i + 2}: ${error.message}`);
+			console.error(`❌ Error processing row ${i + 2}: ${error.message}`)
 		}
 	}
 
-
-	const fileName = `INPUT SIPD BOT.txt`;
-	const fileContent = `Total terinput: ${indicatorTerinput} dari ${rows.length} data yang ada di Excel`;
+	const fileName = `INPUT SIPD BOT.txt`
+	const fileContent = `Total terinput: ${indicatorTerinput} dari ${rows.length} data yang ada di Excel`
 
 	fs.writeFile(fileName, fileContent, (err) => {
 		if (err) {
-			console.error(err);
-			return;
+			console.error(err)
+			return
 		}
-		console.log('File created!');
-	});
-});
+		console.log('File created!')
+	})
+})
 
 client.on('unauthenticated', async () => {
 	console.log('unauthenticated')

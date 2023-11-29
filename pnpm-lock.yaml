@@ -20,9 +20,9 @@ dependencies:
   nodemon:
     specifier: ^3.0.1
     version: 3.0.1
-  playwright:
-    specifier: ^1.37.1
-    version: 1.37.1
+  playwright-chromium:
+    specifier: ^1.40.1
+    version: 1.40.1
 
 packages:
 
@@ -856,19 +856,19 @@ packages:
     engines: {node: '>=8.6'}
     dev: false
 
-  /playwright-core@1.37.1:
-    resolution: {integrity: sha512-17EuQxlSIYCmEMwzMqusJ2ztDgJePjrbttaefgdsiqeLWidjYz9BxXaTaZWxH1J95SHGk6tjE+dwgWILJoUZfA==}
-    engines: {node: '>=16'}
-    hasBin: true
-    dev: false
-
-  /playwright@1.37.1:
-    resolution: {integrity: sha512-bgUXRrQKhT48zHdxDYQTpf//0xDfDd5hLeEhjuSw8rXEGoT9YeElpfvs/izonTNY21IQZ7d3s22jLxYaAnubbQ==}
+  /playwright-chromium@1.40.1:
+    resolution: {integrity: sha512-3atylP47OCTBW0siGI7LOEG/XKL/vnrFH8xdr4uaTnqMsc0Xq4gOLk2gGwniPJ76LSc++9ASc0w/nfqtLAmm3A==}
     engines: {node: '>=16'}
     hasBin: true
     requiresBuild: true
     dependencies:
-      playwright-core: 1.37.1
+      playwright-core: 1.40.1
+    dev: false
+
+  /playwright-core@1.40.1:
+    resolution: {integrity: sha512-+hkOycxPiV534c4HhpfX6yrlawqVUzITRKwHAmYfmsVreltEl6fAZJ3DPfLMOODw0H3s1Itd6MDCWmP1fl/QvQ==}
+    engines: {node: '>=16'}
+    hasBin: true
     dev: false
 
   /process-nextick-args@2.0.1:

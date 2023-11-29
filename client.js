@@ -1,4 +1,4 @@
-const { chromium } = require('playwright')
+const { chromium } = require('playwright-chromium')
 const path = require('path')
 const fs = require('fs')
 const dayjs = require('dayjs')
@@ -7,7 +7,7 @@ const EventEmitter = require('events')
 const { EventsConstants } = require('./utils/constants')
 const { numberFormat } = require('./utils/number')
 
-class SIPDAklapClient extends EventEmitter {
+class SIPDBelanjaClient extends EventEmitter {
 	constructor({ username, password }, { timeout, slowMo }) {
 		super()
 		this.username = username
@@ -22,7 +22,7 @@ class SIPDAklapClient extends EventEmitter {
 		this.folder_auth_session = path.resolve(
 			__dirname,
 			'.auth_session',
-			'SIPDAklapClient',
+			'SIPDBelanjaClient',
 			this.username
 		)
 
@@ -35,7 +35,7 @@ class SIPDAklapClient extends EventEmitter {
 	 * Initialize SIPD AKLAP Client
 	 * @returns {Promise<void>}
 	 * @example
-	 * const client = new SIPDAklapClient({
+	 * const client = new SIPDBelanjaClient({
 	 *  	username: "ppkATMA",
 	 * 	password: "****"
 	 * })
@@ -81,7 +81,7 @@ class SIPDAklapClient extends EventEmitter {
 	 * Destroy SIPD AKLAP Client
 	 * @returns {Promise<void>}
 	 * @example
-	 * const client = new SIPDAklapClient()
+	 * const client = new SIPDBelanjaClient()
 	 * client.destroy()
 	 * client.on('destroyed', () => { ... })
 	 */
@@ -95,7 +95,7 @@ class SIPDAklapClient extends EventEmitter {
 	 * Check login status
 	 * @returns {Promise<boolean>}
 	 * @example
-	 * const client = new SIPDAklapClient()
+	 * const client = new SIPDBelanjaClient()
 	 * client.loginStatus()
 	 */
 	async loginStatus() {
@@ -190,7 +190,10 @@ class SIPDAklapClient extends EventEmitter {
 			})
 		}
 
-		fs.writeFileSync(path.join(this.folder_auth_session, 'cookies.json'), cookieJson)
+		fs.writeFileSync(
+			path.join(this.folder_auth_session, 'cookies.json'),
+			cookieJson
+		)
 
 		this.emit(EventsConstants.LOGIN_SUCCESS)
 		this.emit(EventsConstants.AUTHENTICATED)
@@ -461,4 +464,4 @@ class SIPDAklapClient extends EventEmitter {
 	}
 }
 
-module.exports = SIPDAklapClient
+module.exports = SIPDBelanjaClient
