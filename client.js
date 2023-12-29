@@ -296,7 +296,7 @@ class SIPDBelanjaClient extends EventEmitter {
 			for (let i = 0; i < diffMonth; i++) {
 				await page.click('button[title="Next month"]')
 			}
-		} else {
+		} else if (diffMonth < 0) {
 			for (let i = 0; i <= Math.abs(diffMonth); i++) {
 				await page.click('button[title="Previous month"]')
 			}
