@@ -8,16 +8,17 @@ const { EventsConstants } = require('./utils/constants')
 const { numberFormat } = require('./utils/number')
 
 class SIPDBelanjaClient extends EventEmitter {
-	constructor({ username, password }, { timeout, slowMo }) {
+	constructor({ username, password }, { headless, timeout, slowMo }) {
 		super()
 		this.username = username
 		this.password = password
 
 		this.timeout = timeout || undefined
 		this.slowMo = slowMo || undefined
+		this.headless = headless || false
 
 		this.siteUrl = (url) => {
-			return 'https://sipd.kemendagri.go.id/aklap' + url
+			return 'https://kaltimprov.sipd.kemendagri.go.id/aklap' + url
 		}
 		this.folder_auth_session = path.resolve(
 			__dirname,
@@ -44,7 +45,7 @@ class SIPDBelanjaClient extends EventEmitter {
 	 */
 	async initialize() {
 		const browser = await chromium.launch({
-			headless: false,
+			headless: this.headless,
 			slowMo: this.slowMo,
 		})
 		const context = await browser.newContext()

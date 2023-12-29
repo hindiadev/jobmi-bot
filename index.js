@@ -1,6 +1,7 @@
 const dotenv = require('dotenv')
 const ExcelJS = require('exceljs')
 const fs = require('fs')
+const dayjs = require('dayjs')
 dotenv.config()
 
 const SIPDBelanjaClient = require('./client')
@@ -11,6 +12,7 @@ const client = new SIPDBelanjaClient(
 		password: process.env.SIPDAKLAP_PASSWORD,
 	},
 	{
+		headless: process.env.HEADLESS === 'true',
 		timeout: Number(process.env.WAIT_TIMEOUT),
 	}
 )
@@ -28,7 +30,10 @@ client.on('authenticated', async () => {
 	await workbook.xlsx.readFile('INPUT SIPD BOT.xlsx')
 	const worksheet = workbook.getWorksheet('Sheet1')
 	const rows = worksheet.getRows(2, worksheet.rowCount - 1)
+
 	let indicatorTerinput = 0
+	let log = ''
+	let txtFile = dayjs().format('YYYYMMDDHHmmss')
 
 	for (let i = 0; i < rows.length; i++) {
 		const row = rows[i]
@@ -74,6 +79,7 @@ client.on('authenticated', async () => {
 
 			if (result) {
 				row.getCell('F').value = 'Sukses'
+				row.getCell('G').value = dayjs().format('YYYY-MM-DD HH:mm:ss')
 			} else {
 				row.getCell('F').value = 'Gagal'
 			}
@@ -82,21 +88,20 @@ client.on('authenticated', async () => {
 
 			console.log(`✅ ${result.file} - ${result.nominal}`)
 			indicatorTerinput++
+			log += `${result.file} - ${result.nominal}\n`
 		} catch (error) {
 			console.error(`❌ Error processing row ${i + 2}: ${error.message}`)
+			log += `Error processing row ${i + 2}: ${error.message}\n`
 		}
+
+		fs.writeFile(
+			`${txtFile}.txt`,
+			`Total terinput: ${indicatorTerinput} dari ${rows.length} data yang ada di Excel\n\n${log}`,
+			(err) => err && console.error(err)
+		)
 	}
 
-	const fileName = `INPUT SIPD BOT.txt`
-	const fileContent = `Total terinput: ${indicatorTerinput} dari ${rows.length} data yang ada di Excel`
-
-	fs.writeFile(fileName, fileContent, (err) => {
-		if (err) {
-			console.error(err)
-			return
-		}
-		console.log('File created!')
-	})
+	console.log('Selesai...')
 })
 
 client.on('unauthenticated', async () => {

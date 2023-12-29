@@ -3,3 +3,4 @@ node_modules
 files/*
 !files/file.pdf
 .env
+*.txt
